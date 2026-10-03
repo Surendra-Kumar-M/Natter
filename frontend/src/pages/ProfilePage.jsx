@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import { Camera, Mail, User } from "lucide-react";
+import { Camera, User, Mail, Calendar, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
@@ -11,7 +12,6 @@ const ProfilePage = () => {
     if (!file) return;
 
     const reader = new FileReader();
-
     reader.readAsDataURL(file);
 
     reader.onload = async () => {
@@ -22,34 +22,40 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="h-screen pt-20">
-      <div className="max-w-2xl mx-auto p-4 py-8">
-        <div className="bg-base-300 rounded-xl p-6 space-y-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold ">Profile</h1>
-            <p className="mt-2">Your profile information</p>
-          </div>
+    <div className="min-h-screen pt-20 px-4 pb-10">
+      <div className="max-w-xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link to="/" className="btn btn-ghost btn-sm btn-circle" aria-label="Back to chats">
+            <ArrowLeft className="size-5" />
+          </Link>
+          <h1 className="text-2xl font-bold">Profile</h1>
+        </div>
 
-          {/* avatar upload section */}
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <img
-                src={selectedImg || authUser.profilePic || "/avatar.png"}
-                alt="Profile"
-                className="size-32 rounded-full object-cover border-4 "
-              />
+        <div className="bg-base-100 rounded-2xl shadow-sm border border-base-300 overflow-hidden">
+          
+          {/* Top Section: Avatar & Basic Info */}
+          <div className="p-8 flex flex-col items-center border-b border-base-300 bg-base-200/30">
+            <div className="relative mb-4 group">
+              <div className="size-32 rounded-full overflow-hidden border-4 border-base-100 shadow-md">
+                <img
+                  src={selectedImg || authUser.profilePic || "/avatar.png"}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <label
                 htmlFor="avatar-upload"
                 className={`
-                  absolute bottom-0 right-0 
-                  bg-base-content hover:scale-105
-                  p-2 rounded-full cursor-pointer 
+                  absolute bottom-1 right-1 
+                  bg-primary text-primary-content hover:scale-105
+                  p-2.5 rounded-full cursor-pointer shadow-lg
                   transition-all duration-200
-                  ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}
+                  ${isUpdatingProfile ? "animate-pulse pointer-events-none opacity-50" : ""}
                 `}
+                aria-label="Upload profile picture"
               >
-                <Camera className="w-5 h-5 text-base-200" />
+                <Camera className="w-5 h-5" />
                 <input
                   type="file"
                   id="avatar-upload"
@@ -60,42 +66,49 @@ const ProfilePage = () => {
                 />
               </label>
             </div>
-            <p className="text-sm text-zinc-400">
-              {isUpdatingProfile ? "Uploading..." : "Click the camera icon to update your photo"}
-            </p>
+            
+            <h2 className="text-2xl font-bold mb-1">{authUser?.fullName}</h2>
+            <p className="text-sm font-medium text-success">Online</p>
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-1.5">
-              <div className="text-sm text-zinc-400 flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Full Name
+          {/* Account Details Section */}
+          <div className="p-6 space-y-6">
+            <h3 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider mb-2">Account</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-base-200 rounded-lg text-base-content/70 mt-0.5">
+                  <User className="size-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-base-content/60 mb-0.5">Full Name</p>
+                  <p className="font-medium text-base truncate">{authUser?.fullName}</p>
+                </div>
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.fullName}</p>
-            </div>
 
-            <div className="space-y-1.5">
-              <div className="text-sm text-zinc-400 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email Address
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-base-200 rounded-lg text-base-content/70 mt-0.5">
+                  <Mail className="size-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-base-content/60 mb-0.5">Email</p>
+                  <p className="font-medium text-base truncate">{authUser?.email}</p>
+                  {/* Notice for Google Users if applicable, although we don't have a direct flag, this is a clean representation */}
+                </div>
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.email}</p>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2.5 bg-base-200 rounded-lg text-base-content/70 mt-0.5">
+                  <Calendar className="size-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-base-content/60 mb-0.5">Member Since</p>
+                  <p className="font-medium text-base truncate">{new Date(authUser.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mt-6 bg-base-300 rounded-xl p-6">
-            <h2 className="text-lg font-medium  mb-4">Account Information</h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between py-2 border-b border-zinc-700">
-                <span>Member Since</span>
-                <span>{authUser.createdAt?.split("T")[0]}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span>Account Status</span>
-                <span className="text-green-500">Active</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
