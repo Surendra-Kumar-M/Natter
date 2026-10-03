@@ -60,7 +60,7 @@ export const getMessages = async (req, res) => {
 
     if (result.modifiedCount > 0) {
       const senderSocketId = getReceiverSocketId(userToChatId);
-      if (senderSocketId) {
+      if (senderSocketId.length > 0) {
         io.to(senderSocketId).emit("messagesMarkedAsRead", myId);
       }
     }
@@ -116,7 +116,7 @@ export const sendMessage = async (req, res) => {
 
     await newMessage.save();
 
-    if (receiverSocketId) {
+    if (receiverSocketId.length > 0) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 

@@ -13,6 +13,7 @@ import { useEffect } from "react";
 
 import { Loader } from "lucide-react";
 import { Toaster } from "react-hot-toast";
+import { axiosInstance } from "./lib/axios.js";
 
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
@@ -22,6 +23,20 @@ const App = () => {
 
   useEffect(() => {
     checkAuth();
+
+    const interceptor = axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && !error.config.url.includes("/auth/check")) {
+          useAuthStore.setState({ authUser: null });
+          useAuthStore.getState().disconnectSocket();
+          toast.error("Session expired. Please login again.");
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => axiosInstance.interceptors.response.eject(interceptor);
   }, [checkAuth]);
 
   console.log({ authUser });

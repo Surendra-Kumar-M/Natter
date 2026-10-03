@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 
 import AuthImagePattern from "../components/AuthImagePattern";
 import toast from "react-hot-toast";
+import { GoogleLogin } from '@react-oauth/google';
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -149,6 +150,19 @@ const SignUpPage = () => {
               )}
             </button>
           </form>
+
+          <div className="divider">OR</div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                useAuthStore.getState().googleLogin(credentialResponse.credential);
+              }}
+              onError={() => {
+                console.log('Login Failed');
+              }}
+              useOneTap
+            />
+          </div>
 
           <div className="text-center">
             <p className="text-base-content/60">

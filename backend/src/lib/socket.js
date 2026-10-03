@@ -16,11 +16,11 @@ const io = new Server(server, {
 });
 
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  return userSocketMap[userId] || [];
 }
 
 // used to store online users
-const userSocketMap = {}; // {userId: socketId}
+const userSocketMap = {}; // {userId: [socketId1, socketId2]}
 
 io.use((socket, next) => {
   const cookieHeader = socket.handshake.headers.cookie;
@@ -43,8 +43,14 @@ io.on("connection", (socket) => {
 
   const userId = socket.userId;
   if (userId) {
-    userSocketMap[userId] = socket.id;
-    io.emit("user:online", userId);
+    if (!userSocketMap[userId]) {
+      userSocketMap[userId] = [];
+    }
+    userSocketMap[userId].push(socket.id);
+    
+    if (userSocketMap[userId].length === 1) {
+      io.emit("user:online", userId);
+    }
     
     // Mark pending messages as delivered
     Message.updateMany(
@@ -53,8 +59,8 @@ io.on("connection", (socket) => {
     ).catch(err => logger.error("Error marking messages delivered", err));
   }
 
-  // Backward compatibility
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  // Send current online users ONLY to the newly connected user
+  socket.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("markMessagesAsRead", async ({ senderId }) => {
     try {
@@ -64,7 +70,7 @@ io.on("connection", (socket) => {
       );
       if (result.modifiedCount > 0) {
         const senderSocketId = getReceiverSocketId(senderId);
-        if (senderSocketId) {
+        if (senderSocketId.length > 0) {
           io.to(senderSocketId).emit("messagesMarkedAsRead", userId);
         }
       }
@@ -77,7 +83,7 @@ io.on("connection", (socket) => {
     try {
       await Message.findByIdAndUpdate(messageId, { status: "delivered" });
       const senderSocketId = getReceiverSocketId(senderId);
-      if (senderSocketId) {
+      if (senderSocketId.length > 0) {
         io.to(senderSocketId).emit("message:delivered", { messageId });
       }
     } catch (error) {
@@ -87,32 +93,35 @@ io.on("connection", (socket) => {
 
   socket.on("typing:start", (receiverId) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
+    if (receiverSocketId.length > 0) {
       io.to(receiverSocketId).emit("typing:start", userId);
     }
   });
 
   socket.on("typing:stop", (receiverId) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) {
+    if (receiverSocketId.length > 0) {
       io.to(receiverSocketId).emit("typing:stop", userId);
     }
   });
 
   socket.on("disconnect", async () => {
     logger.info("A user disconnected", { socketId: socket.id });
-    delete userSocketMap[userId];
     
-    const lastSeen = new Date();
-    io.emit("user:offline", { userId, lastSeen });
-    // Backward compatibility
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
-    
-    if (userId) {
-      try {
-        await User.findByIdAndUpdate(userId, { lastSeen });
-      } catch (error) {
-        logger.error("Error updating lastSeen", error);
+    if (userId && userSocketMap[userId]) {
+      userSocketMap[userId] = userSocketMap[userId].filter(id => id !== socket.id);
+      
+      if (userSocketMap[userId].length === 0) {
+        delete userSocketMap[userId];
+        
+        const lastSeen = new Date();
+        io.emit("user:offline", { userId, lastSeen });
+        
+        try {
+          await User.findByIdAndUpdate(userId, { lastSeen });
+        } catch (error) {
+          logger.error("Error updating lastSeen", error);
+        }
       }
     }
   });

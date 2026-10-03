@@ -59,9 +59,11 @@ export const useChatStore = create((set, get) => ({
       set((state) => {
         const exists = state.messages.some((m) => m._id === serverMessage._id);
         if (exists) {
-          // If socket somehow delivered it already, just update it
+          // If socket or fetch somehow delivered it already, remove temp and update real
           return {
-            messages: state.messages.map((m) => m._id === serverMessage._id ? serverMessage : m)
+            messages: state.messages
+              .filter((m) => m._id !== tempId)
+              .map((m) => m._id === serverMessage._id ? serverMessage : m)
           };
         }
         

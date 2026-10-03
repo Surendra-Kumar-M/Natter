@@ -76,6 +76,48 @@ export const login = async (req, res) => {
   }
 };
 
+import { OAuth2Client } from "google-auth-library";
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export const googleLogin = async (req, res) => {
+  const { credential } = req.body;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create user if they don't exist
+      const salt = await bcrypt.genSalt(10);
+      const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-8) + Date.now().toString(), salt);
+      user = new User({
+        fullName: name,
+        email,
+        password: randomPassword,
+        profilePic: picture || "",
+      });
+      await user.save();
+    }
+
+    generateToken(user._id, res);
+
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
+    });
+  } catch (error) {
+    logger.error("Error in googleLogin controller", error);
+    res.status(500).json({ message: "Google Authentication Failed" });
+  }
+};
+
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });

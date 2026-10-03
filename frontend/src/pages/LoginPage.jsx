@@ -3,6 +3,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import { GoogleLogin } from '@react-oauth/google';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -96,6 +97,19 @@ const LoginPage = () => {
               )}
             </button>
           </form>
+
+          <div className="divider">OR</div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                useAuthStore.getState().googleLogin(credentialResponse.credential);
+              }}
+              onError={() => {
+                console.log('Login Failed');
+              }}
+              useOneTap
+            />
+          </div>
 
           <div className="text-center">
             <p className="text-base-content/60">
