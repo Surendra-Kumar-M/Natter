@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger.js";
+import { encryptMessagePayload, decryptMessagePayload } from "../lib/messageEncryption.js";
 
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
@@ -70,9 +71,36 @@ export const getMessages = async (req, res) => {
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    }).sort({ createdAt: 1 });
+    }).sort({ createdAt: 1 }).lean();
 
-    res.status(200).json(messages);
+    const decryptedMessages = messages.map(msg => {
+      let result = { ...msg };
+      
+      if (msg.ciphertext && msg.iv && msg.authTag) {
+        try {
+          const plaintext = decryptMessagePayload(msg.ciphertext, msg.iv, msg.authTag, msg.keyVersion);
+          const parsed = JSON.parse(plaintext);
+          result.text = parsed.text;
+          result.image = parsed.image;
+          result.video = parsed.video;
+        } catch (error) {
+          logger.warn(`Failed to decrypt message ${msg._id}`);
+          result.text = "⚠️ This message is unavailable.";
+          result.image = null;
+          result.video = null;
+        }
+      }
+      
+      // Strip metadata before sending to frontend
+      delete result.ciphertext;
+      delete result.iv;
+      delete result.authTag;
+      delete result.keyVersion;
+
+      return result;
+    });
+
+    res.status(200).json(decryptedMessages);
   } catch (error) {
     logger.error("Error in getMessages controller: ", error);
     res.status(500).json({ error: "Internal server error" });
@@ -106,21 +134,36 @@ export const sendMessage = async (req, res) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
     const initialStatus = "sent";
 
+    // Encrypt the payload before storing
+    const payload = JSON.stringify({ text, image: imageUrl });
+    const { ciphertext, iv, authTag, keyVersion } = encryptMessagePayload(payload);
+
     const newMessage = new Message({
       senderId,
       receiverId,
-      text,
-      image: imageUrl,
+      ciphertext,
+      iv,
+      authTag,
+      keyVersion,
       status: initialStatus,
+      // Do not store plain text/image
     });
 
     await newMessage.save();
 
+    const emittedMessage = newMessage.toObject();
+    emittedMessage.text = text;
+    emittedMessage.image = imageUrl;
+    delete emittedMessage.ciphertext;
+    delete emittedMessage.iv;
+    delete emittedMessage.authTag;
+    delete emittedMessage.keyVersion;
+
     if (receiverSocketId.length > 0) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
+      io.to(receiverSocketId).emit("newMessage", emittedMessage);
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(emittedMessage);
   } catch (error) {
     logger.error("Error in sendMessage controller: ", error);
     res.status(500).json({ error: "Internal server error" });

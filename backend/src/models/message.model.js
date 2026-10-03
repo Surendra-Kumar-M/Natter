@@ -12,6 +12,7 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    // Legacy fields (for plaintext messages before encryption migration)
     text: {
       type: String,
     },
@@ -20,6 +21,20 @@ const messageSchema = new mongoose.Schema(
     },
     video:{
       type: String,
+    },
+    // Application-level encryption fields
+    ciphertext: {
+      type: String,
+    },
+    iv: {
+      type: String,
+    },
+    authTag: {
+      type: String,
+    },
+    keyVersion: {
+      type: Number,
+      default: 1,
     },
     status: {
       type: String,

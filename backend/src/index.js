@@ -55,7 +55,10 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+import { encryptMessagePayload } from "./lib/messageEncryption.js";
+
 server.listen(PORT, () => {
   logger.info("server is running on PORT:" + PORT);
+  logger.info("Message encryption: enabled (AES-256-GCM, key version 1)");
   connectDB();
 });
