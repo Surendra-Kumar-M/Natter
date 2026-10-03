@@ -14,11 +14,15 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 6,
+      minlength: 8,
     },
     profilePic: {
       type: String,
       default: "",
+    },
+    lastSeen: {
+      type: Date,
+      default: Date.now,
     },
   },
   { timestamps: true }

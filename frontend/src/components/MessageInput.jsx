@@ -2,12 +2,29 @@ import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
 import { Image, Send, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuthStore } from "../store/useAuthStore";
+import { compressImage } from "../lib/utils";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const fileInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const typingTimeoutRef = useRef(null);
+  const { sendMessage, selectedUser } = useChatStore();
+  const { socket } = useAuthStore();
+
+  const handleInputChange = (e) => {
+    setText(e.target.value);
+
+    if (socket && selectedUser) {
+      socket.emit("typing:start", selectedUser._id);
+      
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit("typing:stop", selectedUser._id);
+      }, 2000);
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -17,8 +34,9 @@ const MessageInput = () => {
     }
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
+    reader.onloadend = async () => {
+      const compressed = await compressImage(reader.result);
+      setImagePreview(compressed);
     };
     reader.readAsDataURL(file);
   };
@@ -32,16 +50,18 @@ const MessageInput = () => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
-    try {
-      await sendMessage({
-        text: text.trim(),
-        image: imagePreview,
-      });
+    const messageData = {
+      text: text.trim(),
+      image: imagePreview,
+    };
 
-      // Clear form
-      setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    // Clear form immediately to prevent double sends
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    try {
+      await sendMessage(messageData);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
@@ -76,7 +96,7 @@ const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleInputChange}
           />
           <input
             type="file"

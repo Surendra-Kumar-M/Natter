@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
+import { logger } from "../lib/logger.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
@@ -25,7 +26,13 @@ export const protectRoute = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.log("Error in protectRoute middleware: ", error.message);
+    logger.error("Error in protectRoute middleware: ", error);
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Unauthorized - Token Expired" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Unauthorized - Invalid Token" });
+    }
     res.status(500).json({ message: "Internal server error" });
   }
 };

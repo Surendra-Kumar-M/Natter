@@ -1,5 +1,7 @@
 import User from "../models/user.model.js";
 import Message from "../models/message.model.js";
+import mongoose from "mongoose";
+import { logger } from "../lib/logger.js";
 
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
@@ -7,11 +9,36 @@ import { getReceiverSocketId, io } from "../lib/socket.js";
 export const getUsersForSidebar = async (req, res) => {
   try {
     const loggedInUserId = req.user._id;
-    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
+    const users = await User.find({ _id: { $ne: loggedInUserId } }).select("-password").lean();
+
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          receiverId: loggedInUserId,
+          status: { $ne: "read" }
+        }
+      },
+      {
+        $group: {
+          _id: "$senderId",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const unreadMap = {};
+    unreadCounts.forEach(item => {
+      unreadMap[item._id.toString()] = item.count;
+    });
+
+    const filteredUsers = users.map(user => ({
+      ...user,
+      unreadCount: unreadMap[user._id.toString()] || 0
+    }));
 
     res.status(200).json(filteredUsers);
   } catch (error) {
-    console.error("Error in getUsersForSidebar: ", error.message);
+    logger.error("Error in getUsersForSidebar: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -21,16 +48,33 @@ export const getMessages = async (req, res) => {
     const { id: userToChatId } = req.params;
     const myId = req.user._id;
 
+    if (!mongoose.Types.ObjectId.isValid(userToChatId)) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    // Mark messages as read when opening conversation
+    const result = await Message.updateMany(
+      { senderId: userToChatId, receiverId: myId, status: { $ne: "read" } },
+      { $set: { status: "read" } }
+    );
+
+    if (result.modifiedCount > 0) {
+      const senderSocketId = getReceiverSocketId(userToChatId);
+      if (senderSocketId) {
+        io.to(senderSocketId).emit("messagesMarkedAsRead", myId);
+      }
+    }
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 });
 
     res.status(200).json(messages);
   } catch (error) {
-    console.log("Error in getMessages controller: ", error.message);
+    logger.error("Error in getMessages controller: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -41,30 +85,44 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ error: "Invalid receiver ID" });
+    }
+
     let imageUrl;
     if (image) {
+      if (typeof image !== 'string' || !image.startsWith('data:image/')) {
+        return res.status(400).json({ error: "Invalid image format" });
+      }
+      // Check size, approx 5MB limit
+      if (image.length > 7 * 1024 * 1024) {
+        return res.status(400).json({ error: "Image size must be less than 5MB" });
+      }
       // Upload base64 image to cloudinary
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
     }
+
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    const initialStatus = "sent";
 
     const newMessage = new Message({
       senderId,
       receiverId,
       text,
       image: imageUrl,
+      status: initialStatus,
     });
 
     await newMessage.save();
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.log("Error in sendMessage controller: ", error.message);
+    logger.error("Error in sendMessage controller: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -2,6 +2,7 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import { logger } from "../lib/logger.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -42,7 +43,7 @@ export const signup = async (req, res) => {
       res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
-    console.log("Error in signup controller", error.message);
+    logger.error("Error in signup controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -70,7 +71,7 @@ export const login = async (req, res) => {
       profilePic: user.profilePic,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
+    logger.error("Error in login controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -80,7 +81,7 @@ export const logout = (req, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.log("Error in logout controller", error.message);
+    logger.error("Error in logout controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -94,6 +95,14 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
     }
 
+    if (typeof profilePic !== 'string' || !profilePic.startsWith('data:image/')) {
+      return res.status(400).json({ message: "Invalid image format" });
+    }
+
+    if (profilePic.length > 7 * 1024 * 1024) {
+      return res.status(400).json({ message: "Image size must be less than 5MB" });
+    }
+
     const uploadResponse = await cloudinary.uploader.upload(profilePic);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -103,7 +112,7 @@ export const updateProfile = async (req, res) => {
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log("error in update profile:", error);
+    logger.error("error in update profile:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -112,7 +121,7 @@ export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);
   } catch (error) {
-    console.log("Error in checkAuth controller", error.message);
+    logger.error("Error in checkAuth controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };

@@ -18,9 +18,20 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    video:{
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+    },
   },
   { timestamps: true }
 );
+
+messageSchema.index({ senderId: 1, receiverId: 1, createdAt: 1 });
+messageSchema.index({ receiverId: 1, status: 1 });
 
 const Message = mongoose.model("Message", messageSchema);
 

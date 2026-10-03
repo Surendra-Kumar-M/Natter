@@ -2,8 +2,9 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios.js";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
+import { useChatStore } from "./useChatStore.js";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:5001" : "/";
+const BASE_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.MODE === "development" ? "http://localhost:5001" : "/");
 
 export const useAuthStore = create((set, get) => ({
   authUser: null,
@@ -36,7 +37,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       set({ isSigningUp: false });
     }
@@ -51,7 +52,7 @@ export const useAuthStore = create((set, get) => ({
 
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       set({ isLoggingIn: false });
     }
@@ -64,7 +65,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   },
 
@@ -76,7 +77,7 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Profile updated successfully");
     } catch (error) {
       console.log("error in update profile:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       set({ isUpdatingProfile: false });
     }
@@ -87,6 +88,7 @@ export const useAuthStore = create((set, get) => ({
     if (!authUser || get().socket?.connected) return;
 
     const socket = io(BASE_URL, {
+      withCredentials: true,
       query: {
         userId: authUser._id,
       },
@@ -98,6 +100,19 @@ export const useAuthStore = create((set, get) => ({
     socket.on("getOnlineUsers", (userIds) => {
       set({ onlineUsers: userIds });
     });
+
+    socket.on("user:online", (userId) => {
+      set({ onlineUsers: [...new Set([...get().onlineUsers, userId])] });
+      useChatStore.getState().markMessagesAsDeliveredForUser(userId);
+    });
+
+    socket.on("user:offline", ({ userId, lastSeen }) => {
+      set({ onlineUsers: get().onlineUsers.filter((id) => id !== userId) });
+      useChatStore.getState().updateUser(userId, { lastSeen });
+      useChatStore.getState().clearTypingUser(userId);
+    });
+
+    useChatStore.getState().listenToMessages();
   },
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
