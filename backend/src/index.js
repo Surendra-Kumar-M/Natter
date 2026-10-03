@@ -15,7 +15,7 @@ import { app, server } from "./lib/socket.js";
 
 dotenv.config();
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5001;
 const __dirname = path.resolve();
 
 app.use(express.json({ limit: "100mb" }));
@@ -57,7 +57,7 @@ if (process.env.NODE_ENV === "production") {
 
 import { encryptMessagePayload } from "./lib/messageEncryption.js";
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   logger.info("server is running on PORT:" + PORT);
   logger.info("Message encryption: enabled (AES-256-GCM, key version 1)");
   connectDB();
