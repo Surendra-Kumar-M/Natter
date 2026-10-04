@@ -23,14 +23,14 @@ app.use(express.urlencoded({ limit: "100mb", extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   })
 );
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 50,
+  max: process.env.NODE_ENV === "test" ? 5000 : 50,
   message: { message: "Too many authentication attempts, please try again later." }
 });
 

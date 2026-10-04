@@ -112,6 +112,7 @@ export const useChatStore = create((set, get) => ({
     socket.off("message:delivered");
 
     socket.on("newMessage", (newMessage) => {
+      console.log("SOCKET: newMessage received", newMessage._id);
       const authUser = useAuthStore.getState().authUser;
       
       // Prevent sender from processing their own message again via socket
@@ -141,6 +142,7 @@ export const useChatStore = create((set, get) => ({
     });
 
     socket.on("messagesMarkedAsRead", (readerId) => {
+      console.log("SOCKET: messagesMarkedAsRead from", readerId);
       const { selectedUser, messages } = get();
       if (selectedUser && readerId === selectedUser._id) {
         set({

@@ -117,6 +117,7 @@ const MessageInput = () => {
 
         <input
           type="text"
+          data-testid="chat-input"
           className="flex-1 bg-transparent border-none focus:outline-none px-2 text-[15px]"
           placeholder="Type a message..."
           value={text}
@@ -135,6 +136,7 @@ const MessageInput = () => {
 
         <button
           type="submit"
+          data-testid="send-message"
           aria-label="Send message"
           className="btn btn-sm btn-circle btn-primary shrink-0 ml-1"
           disabled={(!text.trim() && !imagePreview) || isSending}

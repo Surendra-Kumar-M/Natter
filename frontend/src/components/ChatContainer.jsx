@@ -82,7 +82,7 @@ const ChatContainer = () => {
           lastDateStr = currentDateStr;
 
           return (
-            <div key={message._id} className="flex flex-col">
+            <div key={message._id} data-testid={`message-${message._id}`} className="flex flex-col">
               {showDateSeparator && (
                 <div className="flex justify-center my-4">
                   <span className="bg-base-300/80 text-base-content/70 text-xs px-3 py-1 rounded-full shadow-sm font-medium">
@@ -101,6 +101,7 @@ const ChatContainer = () => {
                 )}
                 
                 <div 
+                  data-testid="message-bubble"
                   className={`chat-bubble flex flex-col p-2 px-3 relative max-w-[85%] sm:max-w-[75%] 
                   ${isSent ? "bg-primary text-primary-content" : "bg-base-100 text-base-content shadow-sm"}`}
                   style={{ minWidth: "120px" }}
@@ -123,7 +124,7 @@ const ChatContainer = () => {
                     ${isSent ? "text-primary-content/80" : "text-base-content/60"}`}>
                     <span>{formatMessageTime(message.createdAt)}</span>
                     {isSent && (
-                      <span className="flex items-center -mr-0.5">
+                      <span className="flex items-center -mr-0.5" data-testid="message-status" data-status={message.status}>
                         {message.status === "sent" && <Check className="size-3.5" />}
                         {message.status === "delivered" && <CheckCheck className="size-3.5" />}
                         {message.status === "read" && <CheckCheck className="size-3.5 text-blue-300" />}
@@ -137,7 +138,7 @@ const ChatContainer = () => {
         })}
 
         {isTyping && (
-          <div className="chat chat-start">
+          <div className="chat chat-start" data-testid="typing-indicator">
             <div className="chat-image avatar hidden sm:block">
               <div className="size-8 rounded-full">
                 <img src={selectedUser.profilePic || "/avatar.png"} alt="avatar" />

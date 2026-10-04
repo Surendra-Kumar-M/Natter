@@ -82,7 +82,7 @@ const ProfilePage = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-base-content/60 mb-0.5">Full Name</p>
-                  <p className="font-medium text-base truncate">{authUser?.fullName}</p>
+                  <p className="font-medium text-base truncate" data-testid="profile-name">{authUser?.fullName}</p>
                 </div>
               </div>
 

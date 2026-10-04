@@ -67,16 +67,17 @@ const Sidebar = () => {
           </div>
         ) : (
           filteredUsers.map((user) => (
-            <button
-              key={user._id}
-              onClick={() => {
-                setSelectedUser(user);
-                if (user.unreadCount > 0) {
-                  useChatStore.getState().updateUser(user._id, { unreadCount: 0 });
-                }
-              }}
-              className={`
-                w-full p-3 flex items-center gap-3
+              <button
+                key={user._id}
+                data-testid={`user-row-${user._id}`}
+                onClick={() => {
+                  setSelectedUser(user);
+                  if (user.unreadCount > 0) {
+                    useChatStore.getState().updateUser(user._id, { unreadCount: 0 });
+                  }
+                }}
+                className={`
+                  w-full p-3 flex items-center gap-3
                 hover:bg-base-200 transition-colors
                 ${selectedUser?._id === user._id ? "bg-base-200" : ""}
               `}
