@@ -20,7 +20,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 grid lg:grid-cols-2">
+      <main className="flex-1 grid lg:grid-cols-2 pt-12">
         {/* Left Side - Form */}
         <section className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8 pt-8 pb-12 sm:pt-0 sm:pb-0">
