@@ -46,9 +46,10 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen flex flex-col">
+      <main className="flex-1 grid lg:grid-cols-2">
       {/* left side */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
+      <section className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8 pt-8 pb-12 sm:pt-0 sm:pb-0">
           {/* LOGO */}
           <div className="text-center mb-8">
@@ -173,14 +174,18 @@ const SignUpPage = () => {
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* right side */}
-
       <AuthImagePattern
         title="Join our community"
-        subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
+        subtitle="Modern real-time messaging with instant chat, typing indicators, read receipts, online presence, image sharing, and secure application-level encryption."
       />
+      </main>
+
+      <footer className="w-full p-4 bg-base-200/50 text-center text-sm text-base-content/70">
+        <p>Natter &copy; {new Date().getFullYear()} — Secure Real-Time Messaging. Experience instant communication with AES-256-GCM encryption, typing indicators, and seamless image sharing.</p>
+      </footer>
     </div>
   );
 };

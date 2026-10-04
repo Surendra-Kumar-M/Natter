@@ -1,7 +1,7 @@
 {
   "name": "Natter",
   "short_name": "Natter",
-  "description": "Real-time chat application",
+  "description": "Modern real-time messaging with instant chat, typing indicators, read receipts, online presence, image sharing, and AES-256-GCM application-level message encryption.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

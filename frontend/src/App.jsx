@@ -6,7 +6,7 @@ import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { useEffect } from "react";
@@ -18,6 +18,7 @@ import { axiosInstance } from "./lib/axios.js";
 const App = () => {
   const { authUser, checkAuth, isCheckingAuth, onlineUsers } = useAuthStore();
   const { theme } = useThemeStore();
+  const location = useLocation();
 
   console.log({ onlineUsers });
 
@@ -41,6 +42,27 @@ const App = () => {
 
   console.log({ authUser });
 
+  useEffect(() => {
+    const noIndexRoutes = ["/login", "/signup", "/profile", "/settings"];
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    
+    // If it's a noindex route OR it's the root '/' but the user is authenticated (authenticated chat content)
+    const shouldNoIndex = noIndexRoutes.includes(location.pathname) || (location.pathname === "/" && authUser);
+
+    if (shouldNoIndex) {
+      if (!metaRobots) {
+        metaRobots = document.createElement("meta");
+        metaRobots.name = "robots";
+        document.head.appendChild(metaRobots);
+      }
+      metaRobots.content = "noindex,nofollow";
+    } else {
+      if (metaRobots) {
+        metaRobots.content = "index,follow";
+      }
+    }
+  }, [location.pathname, authUser]);
+
   if (isCheckingAuth && !authUser)
     return (
       <div className="flex items-center justify-center h-screen">
@@ -53,11 +75,11 @@ const App = () => {
       <Navbar />
 
       <Routes>
-        <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
+        <Route path="/" element={authUser ? <HomePage /> : <LoginPage />} />
         <Route path="/signup" element={!authUser ? <SignUpPage /> : <Navigate to="/" />} />
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
+        <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/" />} />
       </Routes>
 
       <Toaster />

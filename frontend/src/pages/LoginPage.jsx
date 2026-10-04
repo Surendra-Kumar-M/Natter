@@ -19,9 +19,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Form */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
+    <div className="min-h-screen flex flex-col">
+      <main className="flex-1 grid lg:grid-cols-2">
+        {/* Left Side - Form */}
+        <section className="flex flex-col justify-center items-center p-6 sm:p-12">
         <div className="w-full max-w-md space-y-8 pt-8 pb-12 sm:pt-0 sm:pb-0">
           {/* Logo */}
           <div className="text-center mb-8">
@@ -122,13 +123,18 @@ const LoginPage = () => {
             </p>
           </div>
         </div>
-      </div>
+        </section>
 
-      {/* Right Side - Image/Pattern */}
-      <AuthImagePattern
-        title={"Welcome back!"}
-        subtitle={"Sign in to continue your conversations and catch up with your messages."}
-      />
+        {/* Right Side - Image/Pattern */}
+        <AuthImagePattern
+          title={"Welcome to Natter"}
+          subtitle={"Modern real-time messaging with instant chat, typing indicators, read receipts, online presence, image sharing, and secure application-level encryption."}
+        />
+      </main>
+      
+      <footer className="w-full p-4 bg-base-200/50 text-center text-sm text-base-content/70">
+        <p>Natter &copy; {new Date().getFullYear()} — Secure Real-Time Messaging. Experience instant communication with AES-256-GCM encryption, typing indicators, and seamless image sharing.</p>
+      </footer>
     </div>
   );
 };

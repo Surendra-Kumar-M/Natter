@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /signup
+Disallow: /api/
+Disallow: /chat
+Disallow: /settings
+Disallow: /profile
+
+Sitemap: https://natter-u4on.onrender.com/sitemap.xml
